@@ -16,7 +16,7 @@ import static org.mockito.Mockito.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class ProductServiceIntegrationTest {
+class ProductServiceIT {
 
     @Autowired
     private ProductService productService;
