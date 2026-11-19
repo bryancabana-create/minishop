@@ -14,9 +14,12 @@ jobs:
   build-and-test:
     name: Build y pruebas
     runs-on: ubuntu-latest
+
     steps:
       - name: 1 - Descargar el código
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 2 - Configurar Java 25
         uses: actions/setup-java@v4
@@ -28,13 +31,18 @@ jobs:
       - name: 3 - Compilar
         run: mvn -B compile
 
-      - name: 4 - Pruebas unitarias
+      - name: 4 - Pruebas unitarias (Surefire)
         run: mvn -B test
 
-      - name: 5 - Pruebas de integración y empaquetado
+      - name: 5 - Integración, cobertura y empaquetado
         run: mvn -B verify -DskipUTs=true
 
-      - name: 6 - Guardar reportes
+      - name: 6 - Análisis estático (SonarQube Cloud)
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+
+      - name: 7 - Guardar reportes de pruebas y cobertura
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -42,8 +50,9 @@ jobs:
           path: |
             target/surefire-reports/
             target/failsafe-reports/
+            target/site/jacoco/
 
-      - name: 7 - Guardar el JAR
+      - name: 8 - Guardar el JAR
         uses: actions/upload-artifact@v4
         with:
           name: minishop-jar
