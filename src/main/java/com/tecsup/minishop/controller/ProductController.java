@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
+import com.tecsup.minishop.dto.ProductRequest;
+
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
@@ -17,8 +19,14 @@ public class ProductController {
         this.productService = productService;
     }
 
-    @PostMapping
-    public ResponseEntity<Product> create(@RequestBody Product product) {
+   @PostMapping
+   public ResponseEntity<Product> create(@RequestBody ProductRequest request) {
+       Product product = Product.builder()
+               .name(request.name())
+               .price(request.price())
+               .stock(request.stock())
+               .build();
+
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(productService.save(product));
     }

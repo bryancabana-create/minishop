@@ -18,6 +18,8 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -36,7 +38,48 @@ class ProductControllerIT {
     void setUp() {
         productRepository.deleteAll();
     }
-
+    @Test
+    @DisplayName("POST debe generar un ID y conservar el producto existente")
+    void shouldIgnoreClientIdAndPreserveExistingProduct() throws Exception {
+        Product existing = productRepository.save(
+                Product.builder()
+                        .name("Producto original")
+                        .price(100.0)
+                        .stock(5)
+                        .build()
+        );
+    
+        String requestBody = """
+                {
+                    "id": %d,
+                    "name": "Producto nuevo",
+                    "price": 50.0,
+                    "stock": 3
+                }
+                """.formatted(existing.getId());
+    
+        var result = mockMvc.perform(post("/api/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Producto nuevo"))
+                .andReturn();
+    
+        long createdId = objectMapper
+                .readTree(result.getResponse().getContentAsString())
+                .get("id")
+                .asLong();
+    
+        assertThat(createdId).isNotEqualTo(existing.getId());
+        assertThat(productRepository.count()).isEqualTo(2);
+    
+        Product original = productRepository.findById(existing.getId())
+                .orElseThrow();
+    
+        assertThat(original.getName()).isEqualTo("Producto original");
+        assertThat(original.getPrice()).isEqualTo(100.0);
+        assertThat(original.getStock()).isEqualTo(5);
+    }
     @Test
     @DisplayName("POST /api/products — debe crear un producto y retornar 201")
     void shouldCreateProductAndReturn201() throws Exception {
